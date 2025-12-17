@@ -36,6 +36,9 @@ CREATE TABLE IF NOT EXISTS crawler_pages (
   word_count INT DEFAULT 0 COMMENT 'Word count of main content',
   content_hash VARCHAR(32) COMMENT 'MD5 hash of content for change detection',
 
+  -- Page type hint from sitemap
+  sitemap_type_hint VARCHAR(50) COMMENT 'Page type inferred from sitemap filename (post/page/category/etc)',
+
   -- Extraction metadata
   fetch_mode ENUM('cheerio', 'playwright') COMMENT 'Crawler mode used',
   extraction_method VARCHAR(50) COMMENT 'Method used: readability, semantic, cms_pattern, fallback',

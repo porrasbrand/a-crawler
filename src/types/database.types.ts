@@ -25,6 +25,7 @@ export interface CrawlerPage {
   meta_description: string | null;
   word_count: number;
   content_hash: string | null;
+  sitemap_type_hint: string | null;
   fetch_mode: FetchMode | null;
   extraction_method: ExtractionMethod | null;
   junk_score: number | null;
@@ -50,6 +51,7 @@ export interface CrawlerPageInsert {
   meta_description?: string;
   word_count?: number;
   content_hash?: string;
+  sitemap_type_hint?: string | null;
   fetch_mode?: FetchMode;
   extraction_method?: ExtractionMethod;
   junk_score?: number;

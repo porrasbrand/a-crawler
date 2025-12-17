@@ -29,8 +29,9 @@ export async function upsertPage(page: CrawlerPageInsert): Promise<void> {
       final_url, requested_url_original, status_code, crawl_status,
       redirect_chain, html_content, clean_html, markdown,
       title, h1, meta_description, word_count, content_hash,
+      sitemap_type_hint,
       fetch_mode, extraction_method, junk_score, last_error, run_id
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ON DUPLICATE KEY UPDATE
       status_code = VALUES(status_code),
       crawl_status = VALUES(crawl_status),
@@ -59,6 +60,7 @@ export async function upsertPage(page: CrawlerPageInsert): Promise<void> {
       extraction_method = COALESCE(VALUES(extraction_method), extraction_method),
       junk_score = COALESCE(VALUES(junk_score), junk_score),
       content_hash = COALESCE(VALUES(content_hash), content_hash),
+      sitemap_type_hint = COALESCE(VALUES(sitemap_type_hint), sitemap_type_hint),
 
       last_error = VALUES(last_error),
       last_crawled_at = CURRENT_TIMESTAMP,
@@ -79,6 +81,7 @@ export async function upsertPage(page: CrawlerPageInsert): Promise<void> {
     page.meta_description || null,
     page.word_count || 0,
     page.content_hash || null,
+    page.sitemap_type_hint || null,
     page.fetch_mode || null,
     page.extraction_method || null,
     page.junk_score || null,
