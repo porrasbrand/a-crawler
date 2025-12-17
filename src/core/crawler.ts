@@ -15,15 +15,16 @@ import { htmlToMarkdown } from '../extraction/markdownConverter';
 import { extractMetadata } from '../parsers/metadataExtractor';
 import { extractDomain } from './urlNormalizer';
 import { hashHtmlContent } from '../utils/hash';
+import { SitemapUrl } from '../parsers/sitemapParser';
 
 /**
  * Run a crawl with the given options
  *
- * @param urls - Array of URLs to crawl
+ * @param urls - Array of sitemap URL entries with type hints
  * @param options - Crawl configuration
  * @returns Crawl statistics
  */
-export async function runCrawl(urls: string[], options: CrawlOptions): Promise<CrawlStats> {
+export async function runCrawl(urls: SitemapUrl[], options: CrawlOptions): Promise<CrawlStats> {
   const stats: CrawlStats = {
     urlsDiscovered: urls.length,
     pagesCrawled: 0,
@@ -41,13 +42,13 @@ export async function runCrawl(urls: string[], options: CrawlOptions): Promise<C
   // Track processed URLs to avoid duplicates in queue
   const queuedUrls = new Set<string>();
 
-  // Enqueue all URLs with normalization
-  for (const url of urls) {
+  // Enqueue all URLs with normalization and type hints
+  for (const urlEntry of urls) {
     try {
-      const normalized = normalizeUrl(url);
+      const normalized = normalizeUrl(urlEntry.normalizedUrl);
 
       if (queuedUrls.has(normalized)) {
-        logger.debug({ url, normalized }, 'Skipping duplicate URL in queue');
+        logger.debug({ url: urlEntry.normalizedUrl, normalized }, 'Skipping duplicate URL in queue');
         continue;
       }
 
@@ -61,13 +62,14 @@ export async function runCrawl(urls: string[], options: CrawlOptions): Promise<C
       await requestQueue.addRequest({
         url: normalized,
         userData: {
-          originalUrl: url,
+          originalUrl: urlEntry.url,
+          sitemapTypeHint: urlEntry.typeHint,
         },
       });
 
       queuedUrls.add(normalized);
     } catch (error) {
-      logger.warn({ url, error: (error as Error).message }, 'Failed to enqueue URL');
+      logger.warn({ url: urlEntry.normalizedUrl, error: (error as Error).message }, 'Failed to enqueue URL');
     }
   }
 
@@ -82,6 +84,7 @@ export async function runCrawl(urls: string[], options: CrawlOptions): Promise<C
       const requestedUrl = request.userData.originalUrl || request.loadedUrl || request.url;
       const finalUrl = normalizeUrl(request.loadedUrl || request.url);
       const statusCode = response?.statusCode || 0;
+      const sitemapTypeHint = request.userData.sitemapTypeHint as string | null | undefined;
 
       logger.info({ url: finalUrl, statusCode }, 'Page crawled');
 
@@ -157,6 +160,7 @@ export async function runCrawl(urls: string[], options: CrawlOptions): Promise<C
         fetch_mode: 'cheerio',
         extraction_method: extraction.extractionMethod,
         junk_score: junkScore,
+        sitemap_type_hint: sitemapTypeHint || undefined,
         run_id: options.runId,
       };
 

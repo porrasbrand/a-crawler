@@ -107,12 +107,9 @@ async function main(cliOptions: any) {
     runId,
   };
 
-  // Extract just the URLs
-  const urls = sitemapUrls.map((entry) => entry.normalizedUrl);
-
-  // Run the crawl
-  logger.info({ totalUrls: urls.length }, '🕷️  Starting crawl');
-  const stats = await runCrawl(urls, crawlOptions);
+  // Run the crawl with full sitemap URL entries (includes type hints)
+  logger.info({ totalUrls: sitemapUrls.length }, '🕷️  Starting crawl');
+  const stats = await runCrawl(sitemapUrls, crawlOptions);
 
   // Update crawl run with statistics
   await updateCrawlRun(runId, {
