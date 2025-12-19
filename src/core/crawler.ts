@@ -12,6 +12,7 @@ import { logger } from '../utils/logger';
 import { DEFAULT_CONCURRENCY, DEFAULT_REQUEST_TIMEOUT_SECS, USER_AGENT } from '../config/constants';
 import { extractContent, calculateJunkScore } from '../extraction/contentExtractor';
 import { htmlToMarkdown } from '../extraction/markdownConverter';
+import { extractNavStructure } from '../extraction/navExtractor';
 import { extractMetadata } from '../parsers/metadataExtractor';
 import { extractDomain } from './urlNormalizer';
 import { hashHtmlContent } from '../utils/hash';
@@ -132,12 +133,16 @@ export async function runCrawl(urls: SitemapUrl[], options: CrawlOptions): Promi
       // Calculate junk score
       const junkScore = calculateJunkScore(extraction.cleanHtml || htmlContent);
 
+      // Extract navigation structure from raw HTML (before cleaning)
+      const navStructure = extractNavStructure(htmlContent, finalUrl);
+
       logger.debug(
         {
           url: finalUrl,
           extractionMethod: extraction.extractionMethod,
           wordCount: extraction.wordCount,
           markdownLength: markdown.length,
+          navItems: navStructure.primary_nav.length,
         },
         'Content extracted'
       );
@@ -152,6 +157,7 @@ export async function runCrawl(urls: SitemapUrl[], options: CrawlOptions): Promi
         html_content: htmlContent,
         clean_html: extraction.cleanHtml,
         markdown: markdown,
+        nav_structure: navStructure,
         title: metadata.title || undefined,
         h1: metadata.h1 || undefined,
         meta_description: metadata.metaDescription || undefined,

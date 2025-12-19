@@ -1,0 +1,56 @@
+{
+  "permissions": {
+    "defaultMode": "acceptEdits",
+    "allow": [
+      "Bash(git:*)",
+      "Bash(npm:*)",
+      "Bash(npx:*)",
+      "Bash(node:*)",
+      "Bash(ts-node:*)",
+      "Bash(nvm:*)",
+      "Bash(source:*)",
+      "Bash(unset:*)",
+      "Bash(ls:*)",
+      "Bash(cat:*)",
+      "Bash(grep:*)",
+      "Bash(tee:*)",
+      "Bash(curl:*)",
+      "Bash(sleep:*)",
+      "Bash(tail:*)",
+      "Bash(head:*)",
+      "Bash(tree:*)",
+      "Bash(gh:*)",
+      "Bash(sudo mysql:*)",
+      "Bash(mysql:*)",
+      "Bash(MYSQL_PWD='Probandolo901!' mysql:*)",
+      "Bash(MYSQL_PWD=\"Probandolo901!\" mysql:*)",
+      "Read(/home/ubuntu/awsc-new/awesome/**)",
+      "Read(/tmp/claude/**)",
+      "Edit(/home/ubuntu/awsc-new/awesome/a-crawler/**)",
+      "Edit(/home/ubuntu/awsc-new/awesome/seo-processor-worker/**)",
+      "Write(/home/ubuntu/awsc-new/awesome/a-crawler/**)",
+      "Write(/home/ubuntu/awsc-new/awesome/seo-processor-worker/**)",
+      "Write(/tmp/claude/**)"
+    ],
+    "ask": [
+      "Bash(git push:*)",
+      "Bash(rm -rf:*)",
+      "Bash(sudo:*)"
+    ],
+    "deny": [
+      "Read(.env)",
+      "Read(.env.*)",
+      "Edit(.env)",
+      "Edit(.env.*)",
+      "Write(.env)",
+      "Write(.env.*)"
+    ],
+    "additionalDirectories": [
+      "/home/ubuntu/awsc-new/awesome/seo-processor-worker"
+    ]
+  },
+  "sandbox": {
+    "enabled": false,
+    "autoAllowBashIfSandboxed": true
+  }
+}
