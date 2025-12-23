@@ -11,7 +11,7 @@ import { CrawlerPageInsert, UrlAliasInsert } from '../types/database.types';
 import { logger } from '../utils/logger';
 import { DEFAULT_CONCURRENCY, DEFAULT_REQUEST_TIMEOUT_SECS, USER_AGENT } from '../config/constants';
 import { extractContent, calculateJunkScore } from '../extraction/contentExtractor';
-import { htmlToMarkdown } from '../extraction/markdownConverter';
+import { htmlToEnhancedMarkdown } from '../extraction/enhancedMarkdownConverter';
 import { extractNavStructure } from '../extraction/navExtractor';
 import { extractMetadata } from '../parsers/metadataExtractor';
 import { extractDomain } from './urlNormalizer';
@@ -42,6 +42,14 @@ export async function runCrawl(urls: SitemapUrl[], options: CrawlOptions): Promi
 
   // Track processed URLs to avoid duplicates in queue
   const queuedUrls = new Set<string>();
+
+  // Create sitemap typeHint lookup map for redirect validation
+  // Maps normalized URL -> typeHint from sitemap
+  const sitemapTypeHintLookup = new Map<string, string | null>();
+  for (const urlEntry of urls) {
+    const normalized = normalizeUrl(urlEntry.normalizedUrl);
+    sitemapTypeHintLookup.set(normalized, urlEntry.typeHint || null);
+  }
 
   // Enqueue all URLs with normalization and type hints
   for (const urlEntry of urls) {
@@ -85,7 +93,7 @@ export async function runCrawl(urls: SitemapUrl[], options: CrawlOptions): Promi
       const requestedUrl = request.userData.originalUrl || request.loadedUrl || request.url;
       const finalUrl = normalizeUrl(request.loadedUrl || request.url);
       const statusCode = response?.statusCode || 0;
-      const sitemapTypeHint = request.userData.sitemapTypeHint as string | null | undefined;
+      let sitemapTypeHint = request.userData.sitemapTypeHint as string | null | undefined;
 
       logger.info({ url: finalUrl, statusCode }, 'Page crawled');
 
@@ -94,6 +102,25 @@ export async function runCrawl(urls: SitemapUrl[], options: CrawlOptions): Promi
       if (requestedUrl !== finalUrl) {
         redirectChain.push(requestedUrl);
         redirectChain.push(finalUrl);
+
+        // CRITICAL FIX: Re-check typeHint for final_url after redirect
+        // If final_url exists in sitemap with different typeHint, use that instead
+        // Example: /old-url (post) → /new-url (page) should use 'page', not 'post'
+        if (sitemapTypeHintLookup.has(finalUrl)) {
+          const finalUrlTypeHint = sitemapTypeHintLookup.get(finalUrl);
+          if (finalUrlTypeHint && finalUrlTypeHint !== sitemapTypeHint) {
+            logger.info(
+              {
+                finalUrl,
+                requestedUrl,
+                originalTypeHint: sitemapTypeHint,
+                finalTypeHint: finalUrlTypeHint,
+              },
+              'Redirect detected - using final URL typeHint from sitemap'
+            );
+            sitemapTypeHint = finalUrlTypeHint;
+          }
+        }
       }
 
       // Determine crawl status
@@ -122,10 +149,16 @@ export async function runCrawl(urls: SitemapUrl[], options: CrawlOptions): Promi
         domainOverride?.remove_selectors || undefined
       );
 
-      // Convert to Markdown (include H1 and shift heading levels)
-      const markdown = extraction.success
-        ? htmlToMarkdown(extraction.cleanHtml, finalUrl, metadata.h1, true)
-        : '';
+      // Convert to Enhanced Markdown with structural markers
+      const enhancedResult = extraction.success
+        ? htmlToEnhancedMarkdown(extraction.cleanHtml, finalUrl, metadata.h1, true)
+        : null;
+
+      // plainMarkdown = clean markdown for LLM/RAG use (existing `markdown` field)
+      // markdown = enhanced markdown with STRUCT markers for link classification
+      const markdown = enhancedResult?.plainMarkdown || '';
+      const markdownEnhanced = enhancedResult?.markdown || '';
+      const structuralStats = enhancedResult?.detection.stats || null;
 
       // Calculate content hash
       const contentHash = hashHtmlContent(extraction.cleanHtml || htmlContent);
@@ -142,6 +175,8 @@ export async function runCrawl(urls: SitemapUrl[], options: CrawlOptions): Promi
           extractionMethod: extraction.extractionMethod,
           wordCount: extraction.wordCount,
           markdownLength: markdown.length,
+          markdownEnhancedLength: markdownEnhanced.length,
+          structuralStats: structuralStats,
           navItems: navStructure.primary_nav.length,
         },
         'Content extracted'
@@ -157,6 +192,8 @@ export async function runCrawl(urls: SitemapUrl[], options: CrawlOptions): Promi
         html_content: htmlContent,
         clean_html: extraction.cleanHtml,
         markdown: markdown,
+        markdown_enhanced: markdownEnhanced,
+        structural_stats: structuralStats || undefined,
         nav_structure: navStructure,
         title: metadata.title || undefined,
         h1: metadata.h1 || undefined,

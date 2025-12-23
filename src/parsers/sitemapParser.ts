@@ -28,9 +28,9 @@ export function extractSitemapTypeHint(sitemapUrl: string): string | null {
   // WordPress Yoast SEO patterns
   if (/^post-sitemap/i.test(lowerFilename)) return 'post';
   if (/^page-sitemap/i.test(lowerFilename)) return 'page';
-  if (/^category-sitemap/i.test(lowerFilename)) return 'pagination';
-  if (/^tag-sitemap/i.test(lowerFilename)) return 'pagination';
-  if (/^author-sitemap/i.test(lowerFilename)) return 'pagination';
+  if (/^(category|post_category)-sitemap/i.test(lowerFilename)) return 'pagination';
+  if (/^(tag|post_tag)-sitemap/i.test(lowerFilename)) return 'pagination';
+  if (/^(author|post_author)-sitemap/i.test(lowerFilename)) return 'pagination';
 
   // RankMath patterns
   if (/^sitemap-posts/i.test(lowerFilename)) return 'post';
