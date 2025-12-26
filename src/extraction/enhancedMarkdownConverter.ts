@@ -194,6 +194,12 @@ function createEnhancedTurndownService(baseUrl?: string): TurndownService {
           const src = element.getAttribute('src');
           const alt = element.getAttribute('alt') || '';
           if (src) {
+            // Skip base64 images - they bloat the markdown
+            if (src.startsWith('data:image/')) {
+              const typeMatch = src.match(/^data:image\/(\w+)/);
+              const imageType = typeMatch ? typeMatch[1] : 'unknown';
+              return alt ? `![${alt}](data:image/${imageType};base64,...)` : '';
+            }
             const absoluteUrl = makeAbsolute(src, baseUrl);
             return `![${alt}](${absoluteUrl})`;
           }
@@ -270,7 +276,24 @@ function postProcessEnhancedMarkdown(markdown: string): string {
   processed = processed.replace(/<!-- STRUCT:([A-Z_]+):START -->\n\n/g, '<!-- STRUCT:$1:START -->\n');
   processed = processed.replace(/\n\n<!-- STRUCT:([A-Z_]+):END -->/g, '\n<!-- STRUCT:$1:END -->');
 
-  // 3. Trim whitespace
+  // 3. Strip base64 image data (catch any that slipped through)
+  // Pattern 1: Proper data: URLs
+  processed = processed.replace(
+    /!\[([^\]]*)\]\(data:image\/(\w+);base64,[A-Za-z0-9+/=]{50,}\)/g,
+    (match, alt, imageType) => {
+      return alt ? `![${alt}](data:image/${imageType};base64,...)` : '';
+    }
+  );
+
+  // Pattern 2: Malformed URLs with embedded base64
+  processed = processed.replace(
+    /!\[([^\]]*)\]\([^)]*;base64,[A-Za-z0-9+/=]{50,}\)/g,
+    (match, alt) => {
+      return alt ? `![${alt}](embedded-base64-removed)` : '';
+    }
+  );
+
+  // 4. Trim whitespace
   processed = processed.trim();
 
   return processed;

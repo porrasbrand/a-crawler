@@ -27,11 +27,11 @@ export async function upsertPage(page: CrawlerPageInsert): Promise<void> {
   const query = `
     INSERT INTO crawler_pages (
       final_url, requested_url_original, status_code, crawl_status,
-      redirect_chain, html_content, clean_html, markdown, nav_structure,
+      redirect_chain, html_content, clean_html, markdown, markdown_enhanced, structural_stats, nav_structure,
       title, h1, meta_description, word_count, content_hash,
       sitemap_type_hint,
       fetch_mode, extraction_method, junk_score, last_error, run_id
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ON DUPLICATE KEY UPDATE
       status_code = VALUES(status_code),
       crawl_status = VALUES(crawl_status),
@@ -51,6 +51,10 @@ export async function upsertPage(page: CrawlerPageInsert): Promise<void> {
       ),
       -- ALWAYS update markdown if provided (allows markdown generation logic improvements)
       markdown = COALESCE(VALUES(markdown), markdown),
+      -- ALWAYS update enhanced markdown if provided (markdown with structural markers)
+      markdown_enhanced = COALESCE(VALUES(markdown_enhanced), markdown_enhanced),
+      -- ALWAYS update structural stats if provided (detection counts)
+      structural_stats = COALESCE(VALUES(structural_stats), structural_stats),
       -- ALWAYS update nav_structure if provided (extracted from raw HTML)
       nav_structure = COALESCE(VALUES(nav_structure), nav_structure),
 
@@ -78,6 +82,8 @@ export async function upsertPage(page: CrawlerPageInsert): Promise<void> {
     page.html_content || null,
     page.clean_html || null,
     page.markdown || null,
+    page.markdown_enhanced || null,
+    page.structural_stats ? JSON.stringify(page.structural_stats) : null,
     page.nav_structure ? JSON.stringify(page.nav_structure) : null,
     page.title || null,
     page.h1 || null,
@@ -153,6 +159,7 @@ export async function getPageByUrl(finalUrl: string): Promise<CrawlerPage | null
   return {
     ...row,
     redirect_chain: row.redirect_chain ? JSON.parse(row.redirect_chain) : null,
+    structural_stats: row.structural_stats ? JSON.parse(row.structural_stats) : null,
     nav_structure: row.nav_structure ? JSON.parse(row.nav_structure) : null,
   } as CrawlerPage;
 }
@@ -322,6 +329,7 @@ export async function getPagesByRunId(runId: string): Promise<CrawlerPage[]> {
   return rows.map((row) => ({
     ...row,
     redirect_chain: row.redirect_chain ? JSON.parse(row.redirect_chain) : null,
+    structural_stats: row.structural_stats ? JSON.parse(row.structural_stats) : null,
     nav_structure: row.nav_structure ? JSON.parse(row.nav_structure) : null,
   })) as CrawlerPage[];
 }

@@ -3,7 +3,7 @@
  * Corresponds to MySQL schema in src/db/schema.sql
  */
 
-import type { NavStructure } from './navigation.types';
+import type { NavStructure, StructuralStats } from './navigation.types';
 
 export type CrawlStatus = 'OK' | 'REDIRECT_ALIAS' | 'NOT_FOUND' | 'SOFT_404' | 'ERROR';
 export type FetchMode = 'cheerio' | 'playwright';
@@ -22,6 +22,8 @@ export interface CrawlerPage {
   html_content: string | null;
   clean_html: string | null;
   markdown: string | null;
+  markdown_enhanced: string | null;       // Markdown with STRUCT markers for link classification
+  structural_stats: StructuralStats | null; // Detection counts (faq_modules, toc_sections, etc.)
   nav_structure: NavStructure | null;
   title: string | null;
   h1: string | null;
@@ -49,6 +51,8 @@ export interface CrawlerPageInsert {
   html_content?: string;
   clean_html?: string;
   markdown?: string;
+  markdown_enhanced?: string;       // Markdown with STRUCT markers for link classification
+  structural_stats?: StructuralStats; // Detection counts (faq_modules, toc_sections, etc.)
   nav_structure?: NavStructure;
   title?: string;
   h1?: string;

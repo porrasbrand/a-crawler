@@ -41,6 +41,13 @@ function createTurndownService(baseUrl?: string): TurndownService {
           const src = element.getAttribute('src');
           const alt = element.getAttribute('alt') || '';
           if (src) {
+            // Skip base64 images - they bloat the markdown
+            if (src.startsWith('data:image/')) {
+              // Extract image type for reference
+              const typeMatch = src.match(/^data:image\/(\w+)/);
+              const imageType = typeMatch ? typeMatch[1] : 'unknown';
+              return alt ? `![${alt}](data:image/${imageType};base64,...)` : '';
+            }
             const absoluteUrl = makeAbsolute(src, baseUrl);
             return `![${alt}](${absoluteUrl})`;
           }
@@ -163,10 +170,39 @@ function postProcessMarkdown(markdown: string): string {
   // 4. Normalize heading hierarchy
   processed = normalizeHeadings(processed);
 
-  // 5. Trim whitespace
+  // 5. Strip base64 image data (catch any that slipped through)
+  processed = stripBase64Images(processed);
+
+  // 6. Trim whitespace
   processed = processed.trim();
 
   return processed;
+}
+
+/**
+ * Strip base64 image data from markdown to reduce bloat
+ * Replaces full base64 content with truncated placeholder
+ */
+function stripBase64Images(markdown: string): string {
+  let result = markdown;
+
+  // Pattern 1: Proper data: URLs - ![alt](data:image/TYPE;base64,LONGDATA...)
+  result = result.replace(
+    /!\[([^\]]*)\]\(data:image\/(\w+);base64,[A-Za-z0-9+/=]{50,}\)/g,
+    (match, alt, imageType) => {
+      return alt ? `![${alt}](data:image/${imageType};base64,...)` : '';
+    }
+  );
+
+  // Pattern 2: Malformed URLs with embedded base64 - ![alt](https://site.com/path;base64,LONGDATA)
+  result = result.replace(
+    /!\[([^\]]*)\]\([^)]*;base64,[A-Za-z0-9+/=]{50,}\)/g,
+    (match, alt) => {
+      return alt ? `![${alt}](embedded-base64-removed)` : '';
+    }
+  );
+
+  return result;
 }
 
 /**
