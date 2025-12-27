@@ -90,11 +90,14 @@ function extractTitle(document: Document): string | null {
 
 /**
  * Extract first H1 heading
+ * Truncates to 500 characters to match database schema
  */
 function extractH1(document: Document): string | null {
   const h1 = document.querySelector('h1');
   if (h1 && h1.textContent) {
-    return h1.textContent.trim();
+    const text = h1.textContent.trim();
+    // Truncate to 500 chars to match VARCHAR(500) limit
+    return text.length > 500 ? text.substring(0, 500) : text;
   }
   return null;
 }

@@ -78,6 +78,68 @@ MYSQL_PASSWORD=Probandolo901!
 MYSQL_DATABASE=crawler_db
 ```
 
+## Quick Start - Automated Pipeline
+
+**Easiest way:** Run the complete workflow with a single command from the root directory:
+
+```bash
+cd /home/ubuntu/awsc-new/awesome
+npm run pipeline -- https://example.com/sitemap.xml
+```
+
+This automatically handles crawling, ingestion, and all analysis phases!
+
+See the [main README](../README.md) for all pipeline options.
+
+## Complete Workflow: Crawl → Analyze (Manual)
+
+### 1. Crawl the Site (a-crawler)
+
+```bash
+cd /home/ubuntu/awsc-new/awesome/a-crawler
+npm run crawl -- --sitemap https://example.com/sitemap.xml
+```
+
+Example with real sitemap:
+```bash
+npm run crawl -- --sitemap https://1stchoiceplumbingheatingandairconditioning.com/sitemap_index.xml
+```
+
+### 2. Ingest Crawl Data (seo-processor-worker)
+
+After the crawl completes, switch to the seo-processor-worker directory and ingest the data:
+
+```bash
+cd /home/ubuntu/awsc-new/awesome/seo-processor-worker
+npm run ingest:acrawler
+```
+
+This will:
+- Auto-detect the latest crawl from MySQL a-crawler database
+- Detect the domain automatically
+- Create/find the site in the database
+- Create a new crawl with an auto-increment ID (e.g., 1005, 1006, etc.)
+- Import all pages, links, and headings
+- Resolve internal links
+- Give you a **crawl ID** to use for the next steps
+
+### 3. Run Analysis Phases (seo-processor-worker)
+
+After ingestion completes, run the analysis phases using the crawl ID:
+
+```bash
+# Phase 4 - SQL Aggregation (basic metrics, link depth, SEO issues)
+npm run analyze -- <crawlId> --phase4
+
+# Phase 5 - AI Analysis (AI Classifier + Silo Builder + Hub Detection)
+npm run analyze -- <crawlId> --phase5
+
+# Phase 6 - Link Opportunities (semantic matching + LLM anchor suggestions)
+npm run analyze -- <crawlId> --phase6
+```
+
+You can also run them all sequentially or just the phases you need!
+
 ## Usage
 
 ### Basic Crawl

@@ -52,7 +52,8 @@ export function cleanHtml(html: string): string {
       comment.parentNode?.removeChild(comment);
     });
 
-    return document.body.innerHTML;
+    // Safe innerHTML access
+    return document.body.innerHTML || '';
   } catch (error) {
     console.error('HTML cleaning failed:', (error as Error).message);
     return html; // Return original if cleaning fails
@@ -82,7 +83,8 @@ export function removeElements(html: string, selectors: string[]): string {
       elements.forEach((el) => el.remove());
     });
 
-    return document.body.innerHTML;
+    // Safe innerHTML access
+    return document.body.innerHTML || '';
   } catch (error) {
     console.error('Element removal failed:', (error as Error).message);
     return html;
@@ -105,7 +107,8 @@ export function extractBySelectors(html: string, selectors: string[]): string | 
 
     for (const selector of selectors) {
       const element = document.querySelector(selector);
-      if (element && element.innerHTML.trim()) {
+      // Safe null check: ensure element and innerHTML exist before accessing
+      if (element && element.innerHTML && element.innerHTML.trim()) {
         return element.innerHTML;
       }
     }
