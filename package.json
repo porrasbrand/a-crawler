@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "ts-node src/index.ts",
     "crawl": "ts-node src/index.ts",
+    "research": "ts-node src/scripts/researchQuery.ts",
     "build": "tsc",
     "start": "node dist/index.js",
     "db:setup": "mysql -u loco -pProbandolo901! < src/db/schema.sql"
